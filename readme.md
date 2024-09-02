@@ -1,7 +1,3 @@
-Your updated README section looks great! I’ve made a few minor adjustments to improve clarity and readability:
-
----
-
 ## Prepare Your Data for QB-RAG
 
 **Query-Based Retrieval Augmented Generation (QB-RAG)** is a novel technique that pre-computes a database of potential queries from your content base using Large Language Models (LLMs). QB-RAG efficiently matches incoming questions against this pre-generated query database using vector search, enhancing alignment between user questions and your content.
