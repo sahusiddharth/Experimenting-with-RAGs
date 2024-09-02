@@ -112,25 +112,35 @@ ANSWERABLITY_PROMPT = Prompt(
 )
 
 
-class Converter():
-    def __init__(self, vector_store: VectorStore, llm: LLM, max_retries: int = 1, reproducibility: int = 1):
+class Converter:
+    def __init__(
+        self,
+        vector_store: VectorStore,
+        llm: LLM,
+        questions_generated: int = 10,
+        max_retries: int = 1,
+        reproducibility: int = 1,
+    ):
         self.vector_store = vector_store
         self.llm = llm
         self.max_retries = max_retries
         self._reproducibility = reproducibility
+        self.questions_generated = questions_generated
 
     def _create_question_generation_prompt(self, document: str) -> PromptValue:
         context = document
         # you can add a custom logic on how many questions you would
         # like to generate based the length/complexity of context
-        questions_generated = 10
+        questions_generated = self.questions_generated
 
         prompt_value = QUESTION_GENERATION_PROMPT.format(
             **{"context": context, "questions_generated": questions_generated}
         )
         return prompt_value
 
-    def _create_answerablity_prompt(self, context: str, questions: t.List[str]) -> PromptValue:
+    def _create_answerablity_prompt(
+        self, context: str, questions: t.List[str]
+    ) -> PromptValue:
         prompt_value = ANSWERABLITY_PROMPT.format(
             **{"context": context, "questions": questions}
         )
@@ -139,10 +149,8 @@ class Converter():
     def add_documents(self, document: str):
         assert self.llm is not None, "LLM is not set"
         que_gen_prompt = self._create_question_generation_prompt(document)
-        questions = self.llm.generate(
-            [que_gen_prompt]
-        )
-        
+        questions = self.llm.generate([que_gen_prompt])
+
         questions = _statements_output_parser.parse(
             questions.generations[0][0].text, que_gen_prompt, self.llm, self.max_retries
         )
@@ -163,9 +171,7 @@ class Converter():
         ]
 
         answerablity_list = [
-            _answerablity_output_parser.parse(
-                text, ans_prompt, self.llm, max_retries=1
-            )
+            _answerablity_output_parser.parse(text, ans_prompt, self.llm, max_retries=1)
             for text in answerablity_result
         ]
 
@@ -181,15 +187,12 @@ class Converter():
 
             answerablity_list = QuestionsAnswerablity.model_validate(answerablity_list)
 
-
         document_list = []
 
         for q in answerablity_list.root:
             if q.relevant == 1:
                 document_list.append(
-                    Document(
-                        page_content=q.question, metadata={"context": document}
-                    )
+                    Document(page_content=q.question, metadata={"context": document})
                 )
 
         self.vector_store.add_documents(document_list)
