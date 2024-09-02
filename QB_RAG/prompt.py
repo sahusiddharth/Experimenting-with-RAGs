@@ -20,7 +20,7 @@ class PromptValue(BasePromptValue):
 
 class Prompt(BaseModel):
     """
-    Prompt is a class that represents a prompt for the ragas metrics.
+    Prompt is a class that represents a prompt for the Converter.
 
     Attributes:
         instruction (str): The instruction for the prompt.

@@ -18,7 +18,7 @@ class QuestionList(BaseModel):
 
 
 _questions_output_instruction = get_json_format_instructions(QuestionList)
-
+_statements_output_parser = OutputParser(pydantic_object=QuestionList)
 
 QUESTION_GENERATION_PROMPT = Prompt(
     instruction="You are presented with a text authored by Large Language Model professionals, offering advice and strategies for task-specific evaluations. Your task is to formulate relevant questions that the text is written to address. Closely follow the example questions for style and structure when formulating your own questions for the provided text. Your generated questions should be in the first person with details, but only at a high school reading level. Your questions should be answerable from the text, but do not copy the text verbatim. MAKE SURE to generate at least the specified number of questions",
@@ -112,14 +112,8 @@ ANSWERABLITY_PROMPT = Prompt(
 )
 
 
-class Converter:
-    def __init__(
-        self,
-        vector_store: VectorStore,
-        llm: LLM,
-        max_retries: int = 1,
-        reproducibility: int = 1,
-    ):
+class Converter():
+    def __init__(self, vector_store: VectorStore, llm: LLM, max_retries: int = 1, reproducibility: int = 1):
         self.vector_store = vector_store
         self.llm = llm
         self.max_retries = max_retries
@@ -136,21 +130,20 @@ class Converter:
         )
         return prompt_value
 
-    def _create_answerablity_prompt(
-        self, context: str, questions: t.List[str]
-    ) -> PromptValue:
+    def _create_answerablity_prompt(self, context: str, questions: t.List[str]) -> PromptValue:
         prompt_value = ANSWERABLITY_PROMPT.format(
             **{"context": context, "questions": questions}
         )
         return prompt_value
 
-    async def modify_documents(self, document: str):
+    def add_documents(self, document: str):
         assert self.llm is not None, "LLM is not set"
-
         que_gen_prompt = self._create_question_generation_prompt(document)
-        questions = await self.llm.generate(que_gen_prompt)
-
-        questions = _questions_output_instruction.aparse(
+        questions = self.llm.generate(
+            [que_gen_prompt]
+        )
+        
+        questions = _statements_output_parser.parse(
             questions.generations[0][0].text, que_gen_prompt, self.llm, self.max_retries
         )
 
@@ -170,7 +163,7 @@ class Converter:
         ]
 
         answerablity_list = [
-            _answerablity_output_parser.aparse(
+            _answerablity_output_parser.parse(
                 text, ans_prompt, self.llm, max_retries=1
             )
             for text in answerablity_result
@@ -188,14 +181,16 @@ class Converter:
 
             answerablity_list = QuestionsAnswerablity.model_validate(answerablity_list)
 
-            document_list = []
 
-            for q in answerablity_list.root:
-                if q.relevant == 1:
-                    document_list.append(
-                        Document(
-                            page_content=q.question, metadata={"context": document}
-                        )
+        document_list = []
+
+        for q in answerablity_list.root:
+            if q.relevant == 1:
+                document_list.append(
+                    Document(
+                        page_content=q.question, metadata={"context": document}
                     )
+                )
 
-            self.vector_store.aadd_documents(document_list)
+        self.vector_store.add_documents(document_list)
+        return len(document_list)
