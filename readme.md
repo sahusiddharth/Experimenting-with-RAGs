@@ -22,6 +22,30 @@ For convenience, you can refer to the `requirements.txt` file, which lists all t
 
 To manage secret keys, I use `dotenv`. If you choose this method, store your secret keys inside the `.env` file.
 
+### Quick Start
+This is a small example program you can run to see the converter in action in action!
+
+```python
+from langchain_pinecone import PineconeVectorStore
+from langchain_openai import OpenAIEmbeddings
+from langchain_openai.chat_models import ChatOpenAI
+
+from QB_RAG.converter import Converter
+
+llm = ChatOpenAI(model="gpt-3.5-turbo")
+vector_store = PineconeVectorStore(index=index, embedding=OpenAIEmbeddings(model="text-embedding-3-small"))
+
+cvt = Converter(vector_store, llm)
+
+chunks = [
+  "Abstractive summarization is the task of generating concise summaries that capture the key ideas in a source document. Unlike extractive summarization, which lifts entire sentences from the original text, abstractive summarization involves rephrasing and condensing information to create a newer, shorter version. This process requires a deep understanding of the content, the ability to identify the most important points, and a careful approach to avoid introducing hallucination defects. To evaluate abstractive summaries, Kryscinski et al. (2019) proposed four key dimensions: fluency, coherence, consistency, and relevance. Fluency asks whether sentences in the summary are well-formed and easy to read, while coherence examines whether the summary as a whole makes sense and is logically organized. Consistency checks whether the summary accurately reflects the content of the source document, ensuring no new or contradictory information is added. Lastly, relevance evaluates whether the summary focuses on the most important aspects of the source document, including key points and excluding less relevant details.", 
+  "As modern language models have improved, generating grammatically correct and readable sentences has become less of a concern, making fluency a lower priority in evaluation. Similarly, coherence is becoming less of an issue, particularly for shorter summaries consisting of just a few sentences. This shift in focus leaves factual consistency and relevance as the primary evaluation concerns, which can be effectively framed as binary classification tasks. Despite the widespread use of n-gram-based methods (like ROUGE and METEOR), similarity-based evaluations (like BERTScore and MoverScore), and LLM-based evaluations (such as G-Eval), these approaches have proven to be unreliable or impractical in many cases. They often require gold reference summaries, which can become a bottleneck due to the need for collecting these references, training annotators, and continuously auditing for quality. Furthermore, studies have shown that generated summaries can sometimes surpass the quality of reference summaries, as observed in datasets like CNN/DailyMail and XSUM. Additionally, the metrics’ poor separation of distributions can lead to high variance from the ground truth, making these methods less effective for evaluating summarization tasks."
+  ]
+
+for i in chunks:
+    cvt.add_documents(i)
+```
+
 ### Adapting to Your Use Case
 
 To fully harness the power of QB-RAG, consider the following adjustments:
