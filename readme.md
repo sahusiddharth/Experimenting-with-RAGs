@@ -23,7 +23,7 @@ For convenience, you can refer to the `requirements.txt` file, which lists all t
 To manage secret keys, I use `dotenv`. If you choose this method, store your secret keys inside the `.env` file.
 
 ### Quick Start
-This is a small example program you can run to see the converter in action in action!
+This is a small example program you can run to see the converter in action!
 
 ```python
 from langchain_pinecone import PineconeVectorStore
